@@ -36,40 +36,34 @@ export RAMALAMA_CONTAINER_ENGINE=podman
 
 2. Run model server 
 ```commandline
- ramalama serve --network llama-network llama3.2:3b-instruct-fp16 -p 1143
+ ramalama --image=quay.io/bluesman/vllm-cpu-env:latest --runtime vllm serve meta-llama/Llama-3.2-3B-Instruct
 ```
 
 ## Run Llama Stack Server
 
 1. Setup environment variables
 ```commandline
-export INFERENCE_MODEL="meta-llama/Llama-3.2-3B-Instruct"
+export INFERENCE_MODEL="/mnt/models/model.file"
 export LLAMA_STACK_PORT=8321
 ```
 
 2. Run llama-stack server with podman
 
-a) Pull the distribution image
 ```commandline
-podman pull docker.io/llamastack/distribution-ollama:0.1.5
-```
-
-b) Make local directory to mount
-```commandline
-mkdir -p ~/.llama
-```
-
-c) Run the server
-
-```commandline
-podman run --privileged -it \
-  --network host \
+podman run \
+  -it --network=host \
   -p $LLAMA_STACK_PORT:$LLAMA_STACK_PORT \
-  -v ~/.llama:/root/.llama \
+  llamastack/distribution-remote-vllm \
+  --port $LLAMA_STACK_PORT \
   --env INFERENCE_MODEL=$INFERENCE_MODEL \
-  --env OLLAMA_URL=http://localhost:11434 \
-  docker.io/llamastack/distribution-ollama:0.1.5 \
-  --port $LLAMA_STACK_PORT
+  --env VLLM_MAX_TOKENS=200 \
+  --env VLLM_API_TOKEN=fake \
+  --env VLLM_URL=http://localhost:8080/v1 
 ```
 
-Currently this fails as we don't yet have support for LamaRama https://github.com/meta-llama/llama-stack/pull/1564 
+3. Test using llama-stack-client
+
+```commandline
+llama-stack-client --endpoint http://localhost:8321 inference chat-completion --message "hello, what model are you?"
+
+```
