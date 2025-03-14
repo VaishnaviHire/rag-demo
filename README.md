@@ -67,3 +67,9 @@ podman run \
 llama-stack-client --endpoint http://localhost:8321 inference chat-completion --message "hello, what model are you?"
 
 ```
+
+### Rag agent implementation
+
+```commandline
+python3 rag-agent.py
+```
