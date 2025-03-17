@@ -70,18 +70,7 @@ llama-stack-client --endpoint http://localhost:8321 inference chat-completion --
 ```
 
 ### Rag agent implementation
-
-1. We have containerized rag application. Build custom image
-```commandline
-podman build -t rag-agent .  
-
-```
-2. Run rag application server
-```commandline
-podman run --network=host  localhost/rag-agent:latest
-```
-
-3. Create request
-```commandline
-curl -X POST http://localhost:5001/query   -H "Content-Type: application/json"   -d '{"prompt": "What is the capital of France?"}'
-```
+ 
+ ```commandline
+ python3 rag-agent.py
+ ```

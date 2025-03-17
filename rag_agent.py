@@ -1,22 +1,17 @@
 import os
-import sys
 from pathlib import Path
 from termcolor import cprint
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
 from llama_stack_client.lib.agents.agent import Agent
 from llama_stack_client.lib.agents.event_logger import EventLogger
 from llama_stack_client.types import Document
 from rank_bm25 import BM25Okapi
 
-# Load environment variables from .env if present
 load_dotenv()
 
-# Configuration with environment variable defaults
+# Configuration
 LLAMA_STACK_PORT = os.environ.get("LLAMA_STACK_PORT", "8321")
 INFERENCE_MODEL = os.environ.get("INFERENCE_MODEL", "/mnt/models/model.file")
-LLAMA_STACK_ENDPOINT = os.environ.get("LLAMA_STACK_ENDPOINT", f"http://localhost:{LLAMA_STACK_PORT}")
-SERVER_PORT = int(os.environ.get("SERVER_PORT", "5000"))  #  Flask server
 
 FILE_PATHS = [
     "documents/capital.rst",
@@ -24,18 +19,13 @@ FILE_PATHS = [
 TOP_K = 3  # Number of top documents to retrieve
 MAX_TOKENS_IN_CONTEXT = 4096  # Context size limit (for reference)
 
-
-# Initialize Flask app
-app = Flask(__name__)
-
-
 def create_http_client():
     """Creates an HTTP client for communicating with the Llama Stack server."""
     from llama_stack_client import LlamaStackClient
-    return LlamaStackClient(base_url=LLAMA_STACK_ENDPOINT, timeout=1800)
+    endpoint = os.getenv("LLAMA_STACK_ENDPOINT")
+    base_url = endpoint if endpoint else f"http://localhost:{LLAMA_STACK_PORT}"
+    return LlamaStackClient(base_url=base_url,timeout=1200)
 
-
-# Initialize client
 client = create_http_client()
 
 # Load documents
@@ -67,56 +57,33 @@ def retrieve(query, k=TOP_K):
     top_k_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
     return [document_texts[i] for i in top_k_indices]
 
-
 # Define prompt construction function
 def build_prompt(query, retrieved_docs):
     """Build a prompt with context and query."""
     context = "\n\n".join(retrieved_docs)
     return f"Context:\n{context}\n\nQuery: {query}\n\nAnswer:"
 
-# Create agent and session
-rag_agent = Agent(
-    client,
-    model=INFERENCE_MODEL,
-    instructions="You should always use the RAG tool to answer questions"
-)
 
+# Create agent and session
+rag_agent = Agent(client,model=INFERENCE_MODEL, instructions="You should always use the RAG tool to answer questions.")
 session_id = rag_agent.create_session("test-session")
 
-@app.route('/query', methods=['POST'])
-def handle_query():
-    data = request.get_json()
-    if not data or 'prompt' not in data:
-        print("Invalid request: No prompt")
-        return jsonify({"error": "Missing 'prompt'"}), 400
+# User prompts
+user_prompts = [
+    "What is the capital of France?",
+]
 
-    prompt = data['prompt']
-    print(f"Processing: {prompt}")
-    try:
-        retrieved_docs = retrieve(prompt)
-        full_prompt = build_prompt(prompt, retrieved_docs)
-        response = rag_agent.create_turn(
-            messages=[{"role": "user", "content": full_prompt}],
-            session_id=session_id,
-        )
-        print(f"Raw response: {response}")  # Debug raw response
-        logs = list(EventLogger().log(response))
-        print(f"Logs: {logs}")  # Debug logs content
-        if not logs:
-            answer = "No response generated"
-        else:
-            # Try to mimic original behavior: use str() or check attributes
-            last_log = logs[-1]
-            # Check if it's a printable event and use str() as fallback
-            answer = str(last_log) if hasattr(last_log, '__str__') else "No response generated"
-            # Alternatively, if you know the attribute, replace with e.g., last_log.content
-        print(f"Answer: {answer}")
-        return jsonify({"prompt": prompt, "answer": answer})
-    except Exception as e:
-        print(f"Query error: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-if __name__ == "__main__":
-    # Run Flask server
-    app.run(host="0.0.0.0", port=SERVER_PORT, debug=False)
+# Run the agent loop
+for prompt in user_prompts:
+    cprint(f"User> {prompt}", "green")
+    # Retrieve relevant documents
+    retrieved_docs = retrieve(prompt)
+    # Build prompt with context
+    full_prompt = build_prompt(prompt, retrieved_docs)
+    # Create turn with enriched prompt
+    response = rag_agent.create_turn(
+        messages=[{"role": "user", "content": full_prompt}],
+        session_id=session_id,
+    )
+    for log in EventLogger().log(response):
+        log.print()
