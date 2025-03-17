@@ -19,22 +19,23 @@ pip --version
 ramalama version
 ```
 
-## Create custom network
-
-Create a Podman network to enable communication between containers:
-```commandline
-podman network create llama-network
-```
 
 ## Start the Model Server with RamaLama 
 Run the ramalama container in server mode to host the model:
 
-1. Ensure you define the container engine for ramalama 
+1. Ensure you define the container engine for ramalama and transport is set
 ```commandline
-export RAMALAMA_CONTAINER_ENGINE=podman
+export RAMALAMA_CONTAINER_ENGINE=podman 
+export RAMALAMA_TRANSPORT=huggingface
 ```
 
-2. Run model server 
+2. Login huggingface using cli
+
+```commandline
+ huggingface-cli login --token <your-token>
+```
+
+4. Run model server 
 ```commandline
  ramalama --image=quay.io/bluesman/vllm-cpu-env:latest --runtime vllm serve meta-llama/Llama-3.2-3B-Instruct
 ```
@@ -70,6 +71,17 @@ llama-stack-client --endpoint http://localhost:8321 inference chat-completion --
 
 ### Rag agent implementation
 
+1. We have containerized rag application. Build custom image
 ```commandline
-python3 rag-agent.py
+podman build -t rag-agent .  
+
+```
+2. Run rag application server
+```commandline
+podman run --network=host  localhost/rag-agent:latest
+```
+
+3. Create request
+```commandline
+curl -X POST http://localhost:5001/query   -H "Content-Type: application/json"   -d '{"prompt": "What is the capital of France?"}'
 ```
