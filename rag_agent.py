@@ -175,6 +175,7 @@ def demo_query(query):
     cprint(f" USER PROMPT: '{query}'", "magenta")
     cprint("=" * 60, "magenta")
 
+    input("\nPress Enter to start the document retrieval step...")
     cprint("\n[STEP 1] Document Retrieval", "blue")
     start_time = time.time()
     retrieved_docs, top_matches = retrieve(query, document_texts,client)
@@ -186,6 +187,7 @@ def demo_query(query):
         doc_preview = document_texts[idx][:50].replace("\n", " ") + "..."
         cprint(f"  #{rank + 1}: Score {score:.2f} - {doc_preview}", "cyan")
 
+    input("\nPress Enter to continue to prompt construction...")
     cprint("\n[STEP 2] Prompt Construction", "blue")
     full_prompt = build_prompt(query, retrieved_docs)
     cprint(f"✓ Created prompt with {len(full_prompt)} characters", "green")
@@ -194,29 +196,15 @@ def demo_query(query):
     cprint("  2. User query: " + query, "cyan")
     cprint("  3. Answer instruction", "cyan")
 
+    input("\nPress Enter to continue to trigger response generation...")
     cprint("\n[STEP 3] Generated Response from model", "blue")
     if query in response_cache:
         cprint("✓ Using cached response (instant!)", "green")
         response_text = response_cache[query]
     else:
         cprint("Sending prompt LLM model...", "yellow")
-        start_time = time.time()
-        try:
-            response = rag_agent.create_turn(
-                messages=[{"role": "user", "content": full_prompt}],
-                session_id=session_id,
-            )
-            # Extract response text from event logger
-            for log in EventLogger().log(response):
-                log.print()
-                if hasattr(log, 'content') and log.content:
-                    response_text = log.content
+        response_text = get_response()
 
-            gen_time = time.time() - start_time
-            cprint(f"✓ Generated response in {gen_time:.2f} seconds", "green")
-        except Exception as e:
-            cprint(f"Error: {str(e)}", "red")
-            response_text = f"Error: {str(e)}"
 
     # Display final response
     cprint("\n[FINAL RESPONSE]", "blue")
