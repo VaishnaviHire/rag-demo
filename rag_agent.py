@@ -171,9 +171,9 @@ def get_response(query, use_cache=True):
 
 def demo_query(query):
     """Run a query and explain each step."""
-    cprint("\n" + "=" * 60, "green")
-    cprint(f" USER PROMPT: '{query}'", "green")
-    cprint("=" * 60, "green")
+    cprint("\n" + "=" * 60, "magenta")
+    cprint(f" USER PROMPT: '{query}'", "magenta")
+    cprint("=" * 60, "magenta")
 
     cprint("\n[STEP 1] Document Retrieval", "blue")
     start_time = time.time()
@@ -233,10 +233,9 @@ def initialize_demo():
     cprint("=" * 60, "green")
     cprint("\nRunning a sample query to demonstrate the system...", "white")
 
-    sample_query = "When is the presentation about AI agents?"
+    sample_query = "When is the demo on AI agents?"
     demo_query(sample_query)
-
-    return "Demo initialized successfully! Use get_response() or demo_query() to try your own queries."
+    cprint("\n\nDemo initialized successfully! Use rag_agent.get_response('Your query'') to try your own queries.","yellow")
 
 
 # Make functions available to IPython
