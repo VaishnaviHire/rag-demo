@@ -17,8 +17,15 @@ podman --version
 python3 --version
 pip --version
 ramalama version
+ipython
 ```
 
+## Create custom Podman network
+
+To ensure we can expose the ports irrespective of underlying device, create a custom podman network
+```commandline
+podman network create llama-network
+```
 
 ## Start the Model Server with RamaLama 
 Run the ramalama container in server mode to host the model:
@@ -37,7 +44,7 @@ export RAMALAMA_TRANSPORT=huggingface
 
 4. Run model server 
 ```commandline
- ramalama --image=quay.io/bluesman/vllm-cpu-env:latest --runtime vllm serve meta-llama/Llama-3.2-3B-Instruct
+ramalama --image=quay.io/bluesman/vllm-cpu-env:latest  --runtime vllm serve meta-llama/Llama-3.2-1B-Instruct  --network=llama-network
 ```
 
 ## Run Llama Stack Server
@@ -50,27 +57,38 @@ export LLAMA_STACK_PORT=8321
 
 2. Run llama-stack server with podman
 
+a. Get the ramalama container name
+```commandline
+RAMALAMA_CONTAINER=$(podman ps --format "{{.Names}}" | grep "^ramalama")
+```
+
+b. Run the server
 ```commandline
 podman run \
-  -it --network=host \
+  -it --network=llama-network \
   -p $LLAMA_STACK_PORT:$LLAMA_STACK_PORT \
   llamastack/distribution-remote-vllm \
   --port $LLAMA_STACK_PORT \
-  --env INFERENCE_MODEL=$INFERENCE_MODEL \
+  --env INFERENCE_MODEL=/mnt/models/model.file \
   --env VLLM_MAX_TOKENS=200 \
   --env VLLM_API_TOKEN=fake \
-  --env VLLM_URL=http://localhost:8080/v1 
+  --env VLLM_URL=http://$RAMALAMA_CONTAINER:8080/v1
 ```
 
-3. Test using llama-stack-client
-
-```commandline
-llama-stack-client --endpoint http://localhost:8321 inference chat-completion --message "hello, what model are you?"
-
-```
 
 ### Rag agent implementation
  
+
  ```commandline
- python3 rag-agent.py
+ ipython
  ```
+
+Pre-cached queries
+```commandline
+import rag_agent
+```
+
+To run your own query
+```commandline
+rag_agent.demo_query("Is there any demo on Kubernetes?")
+```

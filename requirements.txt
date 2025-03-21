@@ -1,4 +1,3 @@
 termcolor==2.5.0
 python-dotenv==0.12.0
 llama_stack_client==0.1.6
-rank-bm25==0.2.2
