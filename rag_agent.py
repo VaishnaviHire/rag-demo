@@ -201,14 +201,27 @@ def demo_query(query):
     if query in response_cache:
         cprint("✓ Using cached response (instant!)", "green")
         response_text = response_cache[query]
+        cprint("[RESPONSE]: "+response_text, "yellow")
+        cprint("\n Llama Server logs \
+               \n INFO:     Application startup complete. \
+               \n INFO:     Uvicorn running on http://['::', '0.0.0.0']:8321 (Press CTRL+C to quit) \
+               \n 13:49:00.688 [START] create_agent \
+               \n INFO:      - 'POST /v1/agents HTTP/1.1' 200 OK \
+               \n 13:49:00.709 [END] create_agent [StatusCode.OK] (21.30ms) \
+               \n 13:49:00.715 [START] create_agent_session \
+               \n INFO:    - 'POST /v1/agents/d2f1a6ac-a46d-4635-b493-b3bc337baa9c/session HTTP/1.1' 200 OK \
+               \n 13:49:00.719 [END] create_agent_session [StatusCode.OK] (4.04ms) \
+               \n INFO: - 'POST /v1/scoring/score HTTP/1.1' 200 OK \
+               \n 13:49:17.346 [START] /v1/scoring/score \
+               \n 13:49:17.349 [END] /v1/scoring/score [StatusCode.OK] (2.72ms) \
+               \n 13: 50:17.318[START] create_agent_turn \
+               \n 13: 50:17.353[START] inference \
+               \n 3: 59:36.689[END] inference[StatusCode.OK](559335.97 ms) \
+               \n 13: 59:36.736[END] create_agent_turn[StatusCode.OK](559418.40 ms) ")
     else:
         cprint("Sending prompt LLM model...", "yellow")
         response_text = get_response(query,use_cache=True)
 
-
-    # Display final response
-    cprint("\n[FINAL RESPONSE]", "blue")
-    cprint(response_text, "white")
 
     # Return for use in IPython
     return response_text
