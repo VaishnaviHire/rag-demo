@@ -135,6 +135,7 @@ if os.path.exists(response_cache_file):
 
 def get_response(query, use_cache=True):
     if use_cache and query in response_cache:
+        cprint("Response is cached for this query","yellow")
         return response_cache[query]
     retrieved_docs, top_matches = retrieve(query, document_texts, client)
 
@@ -154,15 +155,14 @@ def get_response(query, use_cache=True):
             log.print()
             if hasattr(log, 'content') and log.content:
                 response_text = log.content
+                # Cache the response
+                if response_text:
+                    response_cache[query] = response_text
+                    with open(response_cache_file, "wb") as f:
+                        pickle.dump(response_cache, f)
+                    cprint("\n✓ Response cached for future use", "green")
     except Exception as e:
         cprint(f"Error with standard approach: {str(e)}", "red")
-
-    # Cache the response
-    if response_text:
-        response_cache[query] = response_text
-        with open(response_cache_file, "wb") as f:
-            pickle.dump(response_cache, f)
-        cprint("\n✓ Response cached for future use", "green")
 
     return response_text
 
