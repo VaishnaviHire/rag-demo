@@ -203,7 +203,7 @@ def demo_query(query):
         response_text = response_cache[query]
     else:
         cprint("Sending prompt LLM model...", "yellow")
-        response_text = get_response()
+        response_text = get_response(query,use_cache=True)
 
 
     # Display final response
